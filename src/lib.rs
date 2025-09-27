@@ -5,12 +5,15 @@ use getopts::Matches;
 pub struct Config {
     file_path: PathBuf,
     compiler_dir: PathBuf,
+    copts: String,
+    lopts: String,
     exit: bool,
 }
 
 impl Config {
-    pub fn new(file_path: PathBuf, compiler_dir: PathBuf, exit: bool) -> Config {
-        Config { file_path, compiler_dir, exit }
+    pub fn new(file_path: PathBuf, compiler_dir: PathBuf, copts: String, 
+    lopts: String, exit: bool) -> Config {
+        Config { file_path, compiler_dir, copts, lopts, exit }
     }
 }
 
@@ -94,8 +97,8 @@ fn generate_commands(config: Config, commands: &mut Vec<String>) {
     commands.push(working_drive.to_string());   
     commands.push("md BUILD".to_string());
     commands.push("cd BUILD".to_string());
-    commands.push(format!("C:\\TASM.EXE {working_drive}\\{file_name}"));
-    commands.push(format!("C:\\TLINK.EXE {working_drive}\\BUILD\\{file_stem}.OBJ"));
+    commands.push(format!("C:\\TASM {} {working_drive}\\{file_name}", config.copts));
+    commands.push(format!("C:\\TLINK {} {working_drive}\\BUILD\\{file_stem}.OBJ", config.lopts));
     commands.push(format!("{working_drive}\\BUILD\\{file_stem}.exe"));
 
     if config.exit {
@@ -108,14 +111,32 @@ pub fn get_args(matches: &Matches) -> Result<Config, io::Error> {
     // Флаг выхода
     let exit = matches.opt_present("e");
 
+    // Получаем параметры компилятора
+    let copts = match matches.opt_str("copts") {
+        Some(options) => options.to_uppercase(),
+        None => "".to_string()
+    };
+
+    // Получаем параметры компоновщика
+    let lopts = match matches.opt_str("lopts") {
+        Some(options) => options.to_uppercase(),
+        None => "".to_string()
+    };
+
     // Получаем абсолютный путь до компилятора
     let compiler_dir_input = match matches.opt_str("c") {
-        Some(path) => path,
-        None => return Err(
-            io::Error::new(io::ErrorKind::InvalidInput,
-            "Путь до компилятора TASM не указан. Подробнее: --help"
-        ))
+        Some(dir) => dir,
+        None => {
+            match option_env!("TASM_DIR") {
+                Some(dir) => {dir.to_string()},
+                None => {
+                    return Err(io::Error::new(io::ErrorKind::InvalidInput,
+                        "Путь до компилятора TASM не указан. Подробнее: --help"))
+                }
+            }
+        }
     };
+
     let compiler_dir = match to_absolute_path(&compiler_dir_input) {
         Ok(compiler_absolute) => {
             let mut tasm_path = compiler_absolute.clone();
@@ -145,7 +166,7 @@ pub fn get_args(matches: &Matches) -> Result<Config, io::Error> {
         Err(e) => return Err(e)
     };
 
-    Ok(Config::new(file_path, compiler_dir, exit))
+    Ok(Config::new(file_path, compiler_dir, copts, lopts, exit))
 
 }
 
