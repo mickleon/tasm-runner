@@ -83,6 +83,7 @@ fn generate_commands(config: Config, commands: &mut Vec<String>) {
     build_dir.push("BUILD/"); // Получаем директорию будущего исполняемого файла
 
     commands.push(format!("mount C: {:?}", config.compiler_dir));
+    commands.push("PATH=%PATH;C:\\".to_string());
 
     let working_drive = if file_dir == config.compiler_dir {
         "C:"
@@ -97,9 +98,9 @@ fn generate_commands(config: Config, commands: &mut Vec<String>) {
     commands.push(working_drive.to_string());   
     commands.push("md BUILD".to_string());
     commands.push("cd BUILD".to_string());
-    commands.push(format!("C:\\TASM {} {working_drive}\\{file_name}", config.copts));
-    commands.push(format!("C:\\TLINK {} {working_drive}\\BUILD\\{file_stem}.OBJ", config.lopts));
-    commands.push(format!("{working_drive}\\BUILD\\{file_stem}.exe"));
+    commands.push(format!("TASM {} ..\\{}", config.copts, file_name.to_uppercase()));
+    commands.push(format!("TLINK {} {}.OBJ", config.lopts, file_stem.to_uppercase()));
+    commands.push(format!("{}.EXE", file_stem.to_uppercase()));
 
     if config.exit {
         commands.push("@pause".to_string());
