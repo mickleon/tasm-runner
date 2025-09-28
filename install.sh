@@ -1,6 +1,6 @@
 if ! [ "$1" = "" ]; then
     TASM_DIR="$1" cargo build --release
-    echo "Installed with TASM_PATH="$1""
+    echo "Installed with TASM_DIR="$1""
 else 
     cargo build --release
 fi
