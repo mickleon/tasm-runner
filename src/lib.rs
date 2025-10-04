@@ -85,19 +85,15 @@ fn generate_commands(config: Config, commands: &mut Vec<String>) {
 
     for file_path in config.file_paths.iter() {
         let file_name = file_path.file_name().unwrap().to_str().unwrap(); // Имя компилируемого файла
-
         file_names.push(file_name);
-
         let file_stem = file_path.file_stem().unwrap().to_str().unwrap(); // Имя компилируемого файла без расширения
-
         file_stems.push(file_stem);
     }
-
-    println!("{file_names:?} {}", file_stems.join(".OBJ ").to_uppercase());
 
     let mut build_dir = file_dir.clone();
     build_dir.push("BUILD/"); // Получаем директорию будущего исполняемого файла
 
+    commands.push("keyb ru".to_string());
     commands.push(format!("mount C: {:?}", config.compiler_dir));
     commands.push("PATH=%PATH;C:\\".to_string());
 
