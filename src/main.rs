@@ -1,14 +1,14 @@
 extern crate getopts;
-use getopts::{Options};
-use tasm_runner::{do_work, get_args};
+use getopts::Options;
 use std::{env, process};
+use tasm_runner::{do_work, get_args};
 
-const USING: &str = "Использование: tasm-runner ФАЙЛ [параметры]";
+const USING: &str = "Использование: tasm-runner ФАЙЛ1 [ФАЙЛ2]... [параметры]";
 
-const DESCRIPTION: &str = 
-"Запускает компилятор и компоновщик TASM в Dosbox для создания исполняемого
-файла из кода в файле ФАЙЛ. В директории файла ФАЙЛ появляется поддиректория
-\"/BUILD\" с исполняемым файлом";
+const DESCRIPTION: &str =
+    "Запускает компилятор и компоновщик TASM в Dosbox для создания исполняемого
+файла из кода в файле(ов) ФАЙЛ1, ФАЙЛ2 .... В директории исходных файлов
+появляется поддиректория \"/BUILD\" с исполняемым файлом";
 
 fn print_usage(opts: Options) {
     let brief = format!("{USING}\n\n{DESCRIPTION}");
@@ -20,22 +20,35 @@ fn main() {
     let mut opts = Options::new();
 
     // Устанавливаем параметры и флаги
-    opts.optopt("c", "", 
-    "Устанавливает директорию (не путь до файла) с компилятором и компоновщиком \
+    opts.optopt(
+        "c",
+        "",
+        "Устанавливает директорию (не путь до файла) с компилятором и компоновщиком \
     TASM. В ней должны содержаться файлы \"TASM.exe\" и \"TLINK.exe\"",
-    "ДИРЕКТОРИЯ");
-    opts.optopt("", "copts", "Принимает строку, в которой \
+        "ДИРЕКТОРИЯ",
+    );
+    opts.optopt(
+        "",
+        "copts",
+        "Принимает строку, в которой \
     содержатся параметры для компилятора TASM.exe. Например: \"/l /t\". Подробнее: \
-    \"C:\\TASM\"", "ФЛАГИ");
-    opts.optopt("", "lopts", "Принимает строку, в которой \
+    \"C:\\TASM\"",
+        "ФЛАГИ",
+    );
+    opts.optopt(
+        "",
+        "lopts",
+        "Принимает строку, в которой \
     содержатся параметры для компоновщика TLINK.exe. Например: \"/x /l\". Подробнее: \
-    \"C:\\TLINK\"", "ФЛАГИ");
+    \"C:\\TLINK\"",
+        "ФЛАГИ",
+    );
     opts.optflag("e", "exit", "Выйти из dosbox после выполнения");
     opts.optflag("h", "help", "Выводит эту информацию");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
-        Err(f) => { 
+        Err(f) => {
             eprintln!("{f}");
             process::exit(-1);
         }
@@ -63,11 +76,9 @@ fn main() {
 
     // Запуск работы с полученными параметрами
     match do_work(config) {
-        Ok(status) => {
-            match status.code() {
-                Some(code) => process::exit(code),
-                None => process::exit(-1)
-            }
+        Ok(status) => match status.code() {
+            Some(code) => process::exit(code),
+            None => process::exit(-1),
         },
         Err(e) => {
             println!("{e}");
