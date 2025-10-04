@@ -12,6 +12,7 @@ pub struct Config {
     compiler_dir: PathBuf,
     copts: String,
     lopts: String,
+    debug: bool,
     exit: bool,
 }
 
@@ -21,6 +22,7 @@ impl Config {
         compiler_dir: PathBuf,
         copts: String,
         lopts: String,
+        debug: bool,
         exit: bool,
     ) -> Config {
         Config {
@@ -28,6 +30,7 @@ impl Config {
             compiler_dir,
             copts,
             lopts,
+            debug,
             exit,
         }
     }
@@ -123,6 +126,10 @@ fn generate_commands(config: Config, commands: &mut Vec<String>) {
     ));
     commands.push(format!("{}", file_stems[0].to_uppercase()));
 
+    if config.debug {
+        commands.push(format!("TD {}", file_stems[0].to_uppercase()));
+    }
+
     if config.exit {
         commands.push("@pause".to_string());
         commands.push("exit 0".to_string());
@@ -132,6 +139,9 @@ fn generate_commands(config: Config, commands: &mut Vec<String>) {
 pub fn get_args(matches: &Matches) -> Result<Config, io::Error> {
     // Флаг выхода
     let exit = matches.opt_present("e");
+
+    // Флаг дебага
+    let debug = matches.opt_present("d");
 
     // Получаем параметры компилятора
     let copts = match matches.opt_str("copts") {
@@ -195,7 +205,14 @@ pub fn get_args(matches: &Matches) -> Result<Config, io::Error> {
         file_paths.push(file_path);
     }
 
-    Ok(Config::new(file_paths, compiler_dir, copts, lopts, exit))
+    Ok(Config::new(
+        file_paths,
+        compiler_dir,
+        copts,
+        lopts,
+        debug,
+        exit,
+    ))
 }
 
 // Запуск работы
