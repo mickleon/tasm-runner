@@ -41,7 +41,7 @@ Options:
 Пример:
 
 ```
-tasm-runner hello.asm --lopts="/x" --exit
+tasm-runner hello.asm --lopts="/x /t" --exit
 ```
 
 # Бонус
