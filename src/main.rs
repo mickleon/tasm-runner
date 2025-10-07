@@ -14,7 +14,7 @@ fn main() {
     let config = match get_config(cli, compiler_dir_input) {
         Ok(config) => config,
         Err(e) => {
-            println!("{e}");
+            eprintln!("{e}");
             process::exit(-1);
         }
     };
@@ -25,7 +25,7 @@ fn main() {
             None => process::exit(-1),
         },
         Err(e) => {
-            println!("{e}");
+            eprintln!("{e}");
             process::exit(-1);
         }
     }
