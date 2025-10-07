@@ -1,4 +1,5 @@
-use getopts::Matches;
+use clap::error::ErrorKind;
+use clap::{Error, Parser};
 use std::process::{Command, ExitStatus, Stdio};
 use std::{
     env,
@@ -6,6 +7,38 @@ use std::{
     io,
     path::{Path, PathBuf},
 };
+
+#[derive(Parser)]
+/// Запускает компилятор и компоновщик TASM в DOSbox для создания исполняемого
+/// файла из кода в файле(ах) [FILES]... В директории исходных файлов появляется
+/// поддиректория "BUILD" с исполняемым файлом
+pub struct Cli {
+    files: Vec<String>,
+
+    /// Устанавливает директорию (не путь до файла) с компилятором и
+    /// компоновщиком TASM. В ней должны содержаться файлы "TASM.exe" и
+    /// "TLINK.exe"
+    #[arg(short, value_name = "COMPILER_DIR")]
+    c: Option<String>,
+
+    /// Принимает строку, в которой содержатся параметры для TASM.exe.
+    /// Например: "/X /L". Подробнее: C:\TASM
+    #[arg(long, value_name = "COMPLIER_OPTIONS")]
+    copts: Option<String>,
+
+    /// Принимает строку, в которой содержатся параметры для TLINK.exe.
+    /// Например: "/X /T". Подробнее: C:\TLINK
+    #[arg(long, value_name = "LINKER_OPTIONS", default_value = "/X")]
+    lopts: Option<String>,
+
+    /// Запустить дебаггер TD.exe после компиляции
+    #[arg(short, long)]
+    debug: bool,
+
+    /// Выйти из DOSBox после выполнения
+    #[arg(short, long)]
+    exit: bool,
+}
 
 pub struct Config {
     file_paths: Vec<PathBuf>,
@@ -33,6 +66,27 @@ impl Config {
             debug,
             exit,
         }
+    }
+}
+
+pub fn validate_args(cli: &Cli) -> Result<String, clap::Error> {
+    if cli.files.len() == 0 {
+        Error::raw(
+            ErrorKind::MissingRequiredArgument,
+            "Укажите компилируемые файл(ы)\n",
+        )
+        .exit();
+    }
+
+    match cli.c.clone() {
+        Some(dir) => Ok(dir),
+        None => match option_env!("TASM_DIR") {
+            Some(dir) => Ok(dir.to_string()),
+            None => Err(Error::raw(
+                ErrorKind::MissingRequiredArgument,
+                "Путь до компилятора TASM не указан\n",
+            )),
+        },
     }
 }
 
@@ -132,41 +186,17 @@ fn generate_commands(config: Config, commands: &mut Vec<String>) {
     }
 }
 
-pub fn get_args(matches: &Matches) -> Result<Config, io::Error> {
-    // Флаг выхода
-    let exit = matches.opt_present("e");
-
-    // Флаг дебага
-    let debug = matches.opt_present("d");
-
+pub fn get_config(cli: Cli, compiler_dir_input: String) -> Result<Config, io::Error> {
     // Получаем параметры компилятора
-    let copts = match matches.opt_str("copts") {
+    let copts = match cli.copts {
         Some(options) => options.to_uppercase(),
         None => "".to_string(),
     };
 
     // Получаем параметры компоновщика
-    let mut lopts = match matches.opt_str("lopts") {
+    let lopts = match cli.lopts {
         Some(options) => options.to_uppercase(),
         None => "".to_string(),
-    };
-
-    if lopts.is_empty() {
-        lopts += "/x";
-    }
-
-    // Получаем абсолютный путь до компилятора
-    let compiler_dir_input = match matches.opt_str("c") {
-        Some(dir) => dir,
-        None => match option_env!("TASM_DIR") {
-            Some(dir) => dir.to_string(),
-            None => {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    "Путь до компилятора TASM не указан. Подробнее: --help",
-                ));
-            }
-        },
     };
 
     let compiler_dir = match to_absolute_path(&compiler_dir_input) {
@@ -191,9 +221,10 @@ pub fn get_args(matches: &Matches) -> Result<Config, io::Error> {
         Err(e) => return Err(e),
     };
 
-    // Получаем абсолютный путь до компилиуемого файла
+    // Получаем абсолютные пути до компилиуемых файлов
     let mut file_paths: Vec<PathBuf> = Vec::new();
-    for file_path_input in matches.free.iter() {
+
+    for file_path_input in cli.files.iter() {
         let file_path = match to_absolute_path(&file_path_input) {
             Ok(path) => path,
             Err(e) => return Err(e),
@@ -206,8 +237,8 @@ pub fn get_args(matches: &Matches) -> Result<Config, io::Error> {
         compiler_dir,
         copts,
         lopts,
-        debug,
-        exit,
+        cli.debug,
+        cli.exit,
     ))
 }
 
