@@ -50,7 +50,7 @@ tasm-runner hello.asm --lopts="/x /t" --exit
 
 ```
 iconv hello_utf.asm -f UTF-8 -t CP866 > hello.asm
-tasm-runner hello.asm --lopts="/x"
+tasm-runner hello.asm
 ```
 
 Первая команда создает копию исходного файла в кодировке CP866. А если еще в DOSBox прописать `keyb 866` (что автоматически происходит при выполнении этого скрипта), то строка на кириллице, заданная с помощью директивы `db` будет отображена правильно.
